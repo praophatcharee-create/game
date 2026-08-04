@@ -89,10 +89,10 @@
 <body class="bg-slate-900 text-slate-800 flex flex-col h-screen w-screen overflow-hidden">
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-sm px-4"></div>
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-sm px-4" style="z-index: 9999;"></div>
 
     <!-- Custom Confirmation Modal -->
-    <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" style="z-index: 9999;">
         <div class="glass-panel max-w-sm w-full rounded-2xl shadow-2xl p-6 text-center border-2 border-amber-400">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
                 <i class="fa-solid fa-triangle-exclamation"></i>
@@ -111,7 +111,7 @@
     </div>
 
     <!-- Custom Edit Student Modal -->
-    <div id="edit-student-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div id="edit-student-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" style="z-index: 9999;">
         <div class="glass-panel max-w-sm w-full rounded-2xl shadow-2xl p-6 border-2 border-indigo-400 relative">
             <div class="flex items-center justify-between border-b pb-3 mb-4">
                 <div class="flex items-center gap-2">
@@ -214,29 +214,47 @@
         </div>
     </div>
 
-    <!-- UI OVERLAY: Character Select Screen -->
+    <!-- UI OVERLAY: Character Select Screen (Expanded 4 Heroes) -->
     <div id="char-select-overlay" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 p-4 overflow-y-auto">
-        <div class="glass-panel max-w-2xl w-full rounded-2xl shadow-2xl p-6 md:p-8 text-center relative my-auto">
-            <h2 class="prompt text-3xl font-bold text-slate-900 mb-2">เลือกตัวละครของคุณ</h2>
-            <p class="sarabun text-slate-600 text-lg mb-6">เลือกตัวละครฮีโร่เพื่อเริ่มต้นผจญภัยในโลกวิทยาการคำนวณ</p>
+        <div class="glass-panel max-w-3xl w-full rounded-3xl shadow-2xl p-6 md:p-8 text-center relative my-auto">
+            <h2 class="prompt text-3xl font-bold text-slate-900 mb-1">เลือกตัวละครฮีโร่ของคุณ</h2>
+            <p class="sarabun text-slate-600 text-lg mb-6">เลือกตัวละครฮีโร่ที่ต้องการ ระบบจะบันทึกตัวละครนี้ไว้สำหรับการเล่นทุกครั้ง!</p>
 
-            <div class="grid grid-cols-2 gap-6 max-w-lg mx-auto mb-8">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto mb-8">
                 <!-- Boy Character -->
-                <div id="card-char-boy" onclick="selectCharacter('boy')" class="cursor-pointer border-4 border-amber-400 bg-amber-50 rounded-2xl p-4 transition-all hover:scale-105 shadow-md flex flex-col items-center">
-                    <div class="w-24 h-24 bg-sky-200 rounded-full flex items-center justify-center mb-3 border-2 border-sky-400 shadow-inner">
-                        <i class="fa-solid fa-child text-5xl text-blue-600"></i>
+                <div id="card-char-boy" onclick="selectCharacter('boy')" class="cursor-pointer border-4 border-amber-400 bg-amber-50 rounded-2xl p-3 transition-all hover:scale-105 shadow-md flex flex-col items-center">
+                    <div class="w-20 h-20 bg-sky-200 rounded-full flex items-center justify-center mb-2 border-2 border-sky-400 shadow-inner">
+                        <i class="fa-solid fa-child text-4xl text-blue-600"></i>
                     </div>
-                    <span class="prompt text-xl font-bold text-slate-800">เด็กชาย (Boy)</span>
-                    <span class="sarabun text-sm text-slate-500">สายลุย คล่องแคล่ว</span>
+                    <span class="prompt text-lg font-bold text-slate-800">เด็กชาย</span>
+                    <span class="sarabun text-xs text-slate-500">สายลุย คล่องแคล่ว</span>
                 </div>
 
                 <!-- Girl Character -->
-                <div id="card-char-girl" onclick="selectCharacter('girl')" class="cursor-pointer border-4 border-transparent bg-slate-100 rounded-2xl p-4 transition-all hover:scale-105 shadow-md flex flex-col items-center hover:border-pink-300">
-                    <div class="w-24 h-24 bg-pink-200 rounded-full flex items-center justify-center mb-3 border-2 border-pink-400 shadow-inner">
-                        <i class="fa-solid fa-child-dress text-5xl text-pink-600"></i>
+                <div id="card-char-girl" onclick="selectCharacter('girl')" class="cursor-pointer border-4 border-transparent bg-slate-100 rounded-2xl p-3 transition-all hover:scale-105 shadow-md flex flex-col items-center hover:border-pink-300">
+                    <div class="w-20 h-20 bg-pink-200 rounded-full flex items-center justify-center mb-2 border-2 border-pink-400 shadow-inner">
+                        <i class="fa-solid fa-child-dress text-4xl text-pink-600"></i>
                     </div>
-                    <span class="prompt text-xl font-bold text-slate-800">เด็กหญิง (Girl)</span>
-                    <span class="sarabun text-sm text-slate-500">สายช่างคิด ว่องไว</span>
+                    <span class="prompt text-lg font-bold text-slate-800">เด็กหญิง</span>
+                    <span class="sarabun text-xs text-slate-500">สายช่างคิด ว่องไว</span>
+                </div>
+
+                <!-- Cyber Bot Character -->
+                <div id="card-char-robot" onclick="selectCharacter('robot')" class="cursor-pointer border-4 border-transparent bg-slate-100 rounded-2xl p-3 transition-all hover:scale-105 shadow-md flex flex-col items-center hover:border-cyan-300">
+                    <div class="w-20 h-20 bg-cyan-200 rounded-full flex items-center justify-center mb-2 border-2 border-cyan-400 shadow-inner">
+                        <i class="fa-solid fa-robot text-4xl text-cyan-600"></i>
+                    </div>
+                    <span class="prompt text-lg font-bold text-slate-800">ไซเบอร์บอท</span>
+                    <span class="sarabun text-xs text-slate-500">สายไอที รอบรู้</span>
+                </div>
+
+                <!-- Coder Wizard Character -->
+                <div id="card-char-wizard" onclick="selectCharacter('wizard')" class="cursor-pointer border-4 border-transparent bg-slate-100 rounded-2xl p-3 transition-all hover:scale-105 shadow-md flex flex-col items-center hover:border-purple-300">
+                    <div class="w-20 h-20 bg-purple-200 rounded-full flex items-center justify-center mb-2 border-2 border-purple-400 shadow-inner">
+                        <i class="fa-solid fa-hat-wizard text-4xl text-purple-600"></i>
+                    </div>
+                    <span class="prompt text-lg font-bold text-slate-800">จอมเวทโค้ด</span>
+                    <span class="sarabun text-xs text-slate-500">สายปัญญา ไหวพริบ</span>
                 </div>
             </div>
 
@@ -852,9 +870,6 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // =========================================================================
-        // 🔧 ค่า FIREBASE CONFIG สำหรับใช้งานออนไลน์และ GitHub Pages
-        // =========================================================================
         const MY_CUSTOM_FIREBASE_CONFIG = {
             apiKey: "AIzaSyDXAdUDGhUCzf_4oN1vnQSVVocZ6AOkVm8",
             authDomain: "praomuc.firebaseapp.com",
@@ -917,7 +932,6 @@
                 return this.initPromise;
             },
 
-            // ระบบ Tombstone สำหรับจัดการรายการที่ถูกลบไม่ให้ดึงกลับมาจากคลาวด์/แคช
             getDeletedIds() {
                 try {
                     return new Set(JSON.parse(localStorage.getItem('scw_deleted_student_ids') || '[]'));
@@ -939,18 +953,15 @@
 
                 const deletedSet = this.getDeletedIds();
                 
-                // If this student was deleted, only re-create if it's an explicit login submission
                 if (deletedSet.has(sid)) {
                     if (isExplicitLogin) {
                         deletedSet.delete(sid);
                         this.saveDeletedIds(deletedSet);
                     } else {
-                        // Skip auto-saving progress for deleted students
                         return;
                     }
                 }
 
-                // Merge with existing profile data so ID, Name, Grade, and Room are permanently preserved in the Dashboard
                 let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
                 let existingData = localDb[sid] || {};
                 
@@ -961,6 +972,7 @@
                     name: studentData.name || existingData.name || 'นักเรียน',
                     grade: studentData.grade || existingData.grade || '2',
                     room: studentData.room || existingData.room || '1',
+                    character: studentData.character || existingData.character || 'boy',
                     lastUpdated: new Date().toISOString()
                 };
 
@@ -1023,7 +1035,6 @@
                 let studentMap = new Map();
                 const deletedSet = this.getDeletedIds();
                 
-                // 1. โหลดจาก Local Storage cache ก่อน
                 try {
                     let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
                     Object.values(localDb).forEach(student => {
@@ -1036,7 +1047,6 @@
                     });
                 } catch (e) {}
 
-                // 2. ดึงข้อมูลจาก Firestore Cloud Database
                 if (db) {
                     try {
                         const colRef = collection(db, 'students');
@@ -1072,7 +1082,6 @@
                             const deletedSet = this.getDeletedIds();
                             let studentMap = new Map();
 
-                            // Load local cache
                             try {
                                 let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
                                 Object.values(localDb).forEach(student => {
@@ -1111,17 +1120,14 @@
                 const sid = String(studentId).trim();
                 if (!sid) return;
 
-                // 1. Log into Tombstone Set
                 const deletedSet = this.getDeletedIds();
                 deletedSet.add(sid);
                 this.saveDeletedIds(deletedSet);
                 
-                // 2. Clear from current session if matches active player
                 if (String(gameState.student.id).trim() === sid) {
                     gameState.student.id = '';
                 }
 
-                // 3. Remove from Local Storage
                 try {
                     let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
                     delete localDb[sid];
@@ -1131,7 +1137,6 @@
                     localStorage.setItem('scw_students_db', JSON.stringify(localDb));
                 } catch (e) {}
 
-                // 4. Remove from Firestore
                 if (db) {
                     try {
                         const docRef = doc(db, 'students', sid);
@@ -1327,7 +1332,8 @@
             scene.textures.addCanvas('checkpoint-flag', canvas);
         }
 
-        const createPlayerTexture = (key, isGirl) => {
+        // Texture Generators for 4 Hero Characters
+        const createPlayerTexture = (key, charType) => {
             if (scene.textures.exists(key)) return;
             const canvas = document.createElement('canvas');
             const w = 36, h = 52;
@@ -1337,7 +1343,7 @@
             ctx.fillStyle = 'rgba(0,0,0,0.2)';
             ctx.beginPath(); ctx.ellipse(w / 2, h - 2, 12, 3, 0, 0, Math.PI * 2); ctx.fill();
 
-            if (!isGirl) {
+            if (charType === 'boy') {
                 ctx.fillStyle = '#EF4444'; ctx.beginPath(); ctx.arc(18, 14, 13, Math.PI, 0); ctx.fill();
                 ctx.fillRect(5, 12, 26, 4);
                 ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(18, 8, 4, 0, Math.PI * 2); ctx.fill();
@@ -1367,7 +1373,7 @@
                 } else {
                     ctx.fillRect(8, 45, 8, 5); ctx.fillRect(20, 45, 8, 5);
                 }
-            } else {
+            } else if (charType === 'girl') {
                 ctx.fillStyle = '#B45309'; ctx.beginPath(); ctx.arc(7, 16, 7, 0, Math.PI * 2); ctx.arc(29, 16, 7, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#EC4899'; ctx.fillRect(5, 12, 5, 4); ctx.fillRect(26, 12, 5, 4);
 
@@ -1394,12 +1400,49 @@
                 } else {
                     ctx.fillRect(9, 46, 7, 5); ctx.fillRect(20, 46, 7, 5);
                 }
+            } else if (charType === 'robot') {
+                // Cyber Bot Sprite
+                ctx.fillStyle = '#0284C7'; ctx.fillRect(16, 2, 4, 8);
+                ctx.fillStyle = '#FACC15'; ctx.beginPath(); ctx.arc(18, 2, 3, 0, Math.PI * 2); ctx.fill();
+
+                ctx.fillStyle = '#38BDF8'; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(8, 10, 20, 16, 4); else ctx.fillRect(8, 10, 20, 16); ctx.fill();
+                ctx.strokeStyle = '#0284C7'; ctx.lineWidth = 2; ctx.strokeRect(8, 10, 20, 16);
+
+                ctx.fillStyle = '#0F172A'; ctx.fillRect(11, 14, 14, 6);
+                ctx.fillStyle = '#22C55E'; ctx.beginPath(); ctx.arc(14, 17, 2, 0, Math.PI*2); ctx.arc(22, 17, 2, 0, Math.PI*2); ctx.fill();
+
+                ctx.fillStyle = '#64748B'; ctx.fillRect(10, 28, 16, 12);
+                ctx.fillStyle = '#F59E0B'; ctx.fillRect(13, 31, 3, 3); ctx.fillStyle = '#EF4444'; ctx.fillRect(20, 31, 3, 3);
+                ctx.fillStyle = '#06B6D4'; ctx.fillRect(13, 36, 10, 2);
+
+                ctx.fillStyle = '#475569'; ctx.fillRect(4, 29, 5, 8); ctx.fillRect(27, 29, 5, 8);
+                ctx.fillStyle = '#0284C7'; ctx.fillRect(11, 40, 5, 6); ctx.fillRect(20, 40, 5, 6);
+                ctx.fillStyle = '#1E293B'; ctx.fillRect(9, 46, 7, 5); ctx.fillRect(20, 46, 7, 5);
+            } else if (charType === 'wizard') {
+                // Coder Wizard Sprite
+                ctx.fillStyle = '#7E22CE'; ctx.beginPath(); ctx.moveTo(18, 1); ctx.lineTo(6, 16); ctx.lineTo(30, 16); ctx.fill();
+                ctx.fillStyle = '#FACC15'; ctx.font = '8px sans-serif'; ctx.fillText('⭐', 14, 12);
+                ctx.fillStyle = '#581C87'; ctx.fillRect(4, 15, 28, 4);
+
+                ctx.fillStyle = '#FFEDD5'; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(10, 18, 16, 12, 4); else ctx.fillRect(10, 18, 16, 12); ctx.fill();
+                ctx.fillStyle = '#1E293B'; ctx.beginPath(); ctx.arc(14, 22, 2, 0, Math.PI * 2); ctx.arc(22, 22, 2, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#7E22CE'; ctx.lineWidth = 1; ctx.strokeRect(12, 20, 5, 5); ctx.strokeRect(19, 20, 5, 5);
+
+                ctx.fillStyle = '#6B21A8'; ctx.fillRect(8, 30, 20, 14);
+                ctx.fillStyle = '#FACC15'; ctx.fillRect(17, 30, 2, 14);
+
+                ctx.fillStyle = '#78350F'; ctx.fillRect(29, 25, 2, 22);
+                ctx.fillStyle = '#38BDF8'; ctx.beginPath(); ctx.arc(30, 24, 4, 0, Math.PI * 2); ctx.fill();
+
+                ctx.fillStyle = '#4C1D95'; ctx.fillRect(10, 44, 6, 6); ctx.fillRect(20, 44, 6, 6);
             }
 
             scene.textures.addCanvas(key, canvas);
         };
-        createPlayerTexture('player-boy', false);
-        createPlayerTexture('player-girl', true);
+        createPlayerTexture('player-boy', 'boy');
+        createPlayerTexture('player-girl', 'girl');
+        createPlayerTexture('player-robot', 'robot');
+        createPlayerTexture('player-wizard', 'wizard');
     }
     </script>
 
@@ -1576,7 +1619,7 @@
                 e.setVelocityX((idx % 2 === 0 ? -1 : 1) * enemySpeed);
             });
 
-            const charSpriteKey = gameState.student.character === 'girl' ? 'player-girl' : 'player-boy';
+            const charSpriteKey = 'player-' + (gameState.student.character || 'boy');
             this.player = this.physics.add.sprite(gameState.checkpointX, gameState.checkpointY, charSpriteKey);
             this.player.setBounce(0.05);
             this.player.setCollideWorldBounds(true);
@@ -1697,7 +1740,12 @@
             soundManager.playPowerup();
 
             if (item.itemType === 'red-mushroom') {
-                if (gameState.hearts < gameState.maxHearts) gameState.hearts++;
+                if (gameState.hearts < gameState.maxHearts) {
+                    gameState.hearts++;
+                } else if (gameState.maxHearts < 8) {
+                    gameState.maxHearts++;
+                    gameState.hearts++;
+                }
                 showToast("🍄 ได้รับเห็ดแดง! เพิ่มพลังชีวิต 1 ดวง", "success");
             } else if (item.itemType === 'gold-mushroom') {
                 gameState.buffs.goldInvincibleTime = 10;
@@ -1831,6 +1879,7 @@
                         gameState.score = 0;
                         gameState.coins = 0;
                         gameState.hearts = 5;
+                        gameState.maxHearts = 5;
                         gameState.checkpointX = 100;
                         gameState.checkpointY = 300;
                         document.getElementById('status-modal').classList.add('hidden');
@@ -1987,7 +2036,6 @@
         
         const gradeBank = QUESTION_BANK[gameState.student.grade] || QUESTION_BANK[2];
         
-        // Anti-repetition logic
         let unaskedIndices = [];
         for (let i = 0; i < gradeBank.length; i++) {
             if (!gameState.sessionAskedQuestions.has(i)) {
@@ -2006,7 +2054,6 @@
         const qData = gradeBank[qIndex];
         gameState.activeQuiz = qData;
 
-        // Shuffle options and balance answer distribution
         const mappedChoices = qData.choices.map((text, idx) => ({
             text: text,
             isCorrect: (idx === qData.a)
@@ -2142,6 +2189,7 @@
     function restartFromGameOver() {
         document.getElementById('gameover-modal').classList.add('hidden');
         gameState.hearts = 5;
+        gameState.maxHearts = 5;
         gameState.checkpointX = 100;
         gameState.checkpointY = 300;
         gameState.buffs.shield = false;
@@ -2176,7 +2224,6 @@
         document.getElementById('teacher-dashboard-modal').classList.remove('hidden');
         await loadAndRenderTeacherTable();
 
-        // Attach real-time cloud listener when dashboard opens
         if (window.dbService && window.dbService.subscribeToStudentsRealtime) {
             window.dbService.subscribeToStudentsRealtime((students) => {
                 renderFilteredTeacherTable(students);
@@ -2352,6 +2399,7 @@
             "รหัสนักเรียน": s.id,
             "ชื่อ-นามสกุล": s.name,
             "ระดับชั้น": `ป.${s.grade}/${s.room}`,
+            "ตัวละคร": s.character || 'boy',
             "คะแนนรวม": s.score || 0,
             "เหรียญ": s.coins || 0,
             "ตอบถูก": s.correctAnswers || 0,
@@ -2376,17 +2424,17 @@
     <script>
     function selectCharacter(charType) {
         gameState.student.character = charType;
+        localStorage.setItem('scw_last_student_character', charType);
         
-        const cardBoy = document.getElementById('card-char-boy');
-        const cardGirl = document.getElementById('card-char-girl');
-
-        if (charType === 'boy') {
-            cardBoy.className = "cursor-pointer border-4 border-amber-400 bg-amber-50 rounded-2xl p-4 transition-all scale-105 shadow-md flex flex-col items-center";
-            cardGirl.className = "cursor-pointer border-4 border-transparent bg-slate-100 rounded-2xl p-4 transition-all opacity-70 flex flex-col items-center";
-        } else {
-            cardGirl.className = "cursor-pointer border-4 border-pink-400 bg-pink-50 rounded-2xl p-4 transition-all scale-105 shadow-md flex flex-col items-center";
-            cardBoy.className = "cursor-pointer border-4 border-transparent bg-slate-100 rounded-2xl p-4 transition-all opacity-70 flex flex-col items-center";
-        }
+        ['boy', 'girl', 'robot', 'wizard'].forEach(type => {
+            const card = document.getElementById(`card-char-${type}`);
+            if (!card) return;
+            if (type === charType) {
+                card.className = "cursor-pointer border-4 border-amber-400 bg-amber-50 rounded-2xl p-3 transition-all scale-105 shadow-md flex flex-col items-center";
+            } else {
+                card.className = "cursor-pointer border-4 border-transparent bg-slate-100 rounded-2xl p-3 transition-all opacity-70 flex flex-col items-center hover:border-slate-300";
+            }
+        });
     }
 
     function backToLogin() {
@@ -2491,17 +2539,15 @@
         gameState.student.grade = sgrade;
         gameState.student.room = sroom;
 
-        // บันทึกข้อมูลประจำตัวนักเรียนไว้ในเครื่องเพื่อช่วยออโต้ฟิลล์อัตโนมัติในครั้งถัดไป
         localStorage.setItem('scw_last_student_id', sid);
         localStorage.setItem('scw_last_student_name', sname);
         localStorage.setItem('scw_last_student_grade', sgrade);
         localStorage.setItem('scw_last_student_room', sroom);
 
-        // ดึงข้อมูลเดิมของนักเรียนที่มีอยู่แล้วในระบบ (ถ้ามี) ก่อนเริ่มบันทึก
         const savedData = await window.dbService.loadStudentProgress(sid);
         if (savedData) {
             gameState.currentLevel = savedData.currentLevel || 1;
-            gameState.student.character = savedData.character || 'boy';
+            gameState.student.character = savedData.character || gameState.student.character || 'boy';
             gameState.score = savedData.score || 0;
             gameState.coins = savedData.coins || 0;
             gameState.checkpointX = savedData.checkpointX || 100;
@@ -2511,8 +2557,11 @@
             gameState.playTimeSeconds = savedData.playTimeSeconds || 0;
 
             selectCharacter(gameState.student.character);
-            showToast(`🎉 ยินดีต้อนรับกลับคุณ ${sname}! โหลดข้อมูลเดิมสำเร็จ (เล่นถึงด่าน ${gameState.currentLevel} | ${gameState.score} คะแนน)`, "success");
+            showToast(`🎉 ยินดีต้อนรับกลับคุณ ${sname}! โหลดข้อมูลเดิมสำเร็จ (ด่าน ${gameState.currentLevel} | ${gameState.score} คะแนน)`, "success");
         } else {
+            const savedLocalChar = localStorage.getItem('scw_last_student_character');
+            if (savedLocalChar) selectCharacter(savedLocalChar);
+
             gameState.currentLevel = 1;
             gameState.score = 0;
             gameState.coins = 0;
@@ -2530,7 +2579,6 @@
         document.getElementById('char-select-overlay').classList.remove('hidden');
     });
 
-    // ระบบค้นหาและเติมข้อมูลเดิมให้อัตโนมัติทันทีที่พิมพ์รหัสนักเรียน
     document.getElementById('input-student-id').addEventListener('input', async (e) => {
         const sid = e.target.value.trim();
         const hintEl = document.getElementById('student-id-hint');
@@ -2546,7 +2594,7 @@
             if (existing.room) document.getElementById('input-student-room').value = existing.room;
             if (existing.character) selectCharacter(existing.character);
             if (hintEl) {
-                hintEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> พบข้อมูลบันทึกเดิม: เล่นถึงด่าน ${existing.currentLevel || 1} | คะแนน ${existing.score || 0} | ${existing.coins || 0} เหรียญ`;
+                hintEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> พบข้อมูลเดิม: ด่าน ${existing.currentLevel || 1} | คะแนน ${existing.score || 0} | ${existing.coins || 0} เหรียญ`;
                 hintEl.classList.remove('hidden');
             }
         } else {
@@ -2554,12 +2602,14 @@
         }
     });
 
-    // เติมข้อมูลนักเรียนล่าสุดให้อัตโนมัติเมื่อเข้าเว็บในเครื่องเดิม
     window.addEventListener('DOMContentLoaded', () => {
         const lastId = localStorage.getItem('scw_last_student_id');
         const lastName = localStorage.getItem('scw_last_student_name');
         const lastGrade = localStorage.getItem('scw_last_student_grade');
         const lastRoom = localStorage.getItem('scw_last_student_room');
+        const lastChar = localStorage.getItem('scw_last_student_character');
+
+        if (lastChar) selectCharacter(lastChar);
 
         if (lastId) {
             const idInput = document.getElementById('input-student-id');
