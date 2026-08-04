@@ -92,7 +92,7 @@
     <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none w-full max-w-sm px-4" style="z-index: 9999;"></div>
 
     <!-- Custom Confirmation Modal -->
-    <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" style="z-index: 9999;">
+    <div id="confirm-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" style="z-index: 99999;">
         <div class="glass-panel max-w-sm w-full rounded-2xl shadow-2xl p-6 text-center border-2 border-amber-400">
             <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
                 <i class="fa-solid fa-triangle-exclamation"></i>
@@ -111,7 +111,7 @@
     </div>
 
     <!-- Custom Edit Student Modal -->
-    <div id="edit-student-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" style="z-index: 9999;">
+    <div id="edit-student-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4" style="z-index: 99999;">
         <div class="glass-panel max-w-sm w-full rounded-2xl shadow-2xl p-6 border-2 border-indigo-400 relative">
             <div class="flex items-center justify-between border-b pb-3 mb-4">
                 <div class="flex items-center gap-2">
@@ -2274,8 +2274,8 @@
         }
 
         tbody.innerHTML = filtered.map(s => {
-            const safeId = String(s.id).replace(/'/g, "\\'");
-            const safeName = String(s.name).replace(/'/g, "\\'");
+            const safeId = String(s.id).trim();
+            const safeName = String(s.name || '').trim();
             return `
             <tr class="hover:bg-slate-50 transition-all">
                 <td class="p-3 font-semibold text-slate-700">${s.id}</td>
@@ -2291,14 +2291,14 @@
                 </td>
                 <td class="p-3 text-center text-sm text-slate-500">${Math.floor((s.playTimeSeconds || 0)/60)} นาที</td>
                 <td class="p-3 text-center space-x-1">
-                    <button onclick="editStudentName('${safeId}', '${safeName}')" class="px-2.5 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-xs font-bold transition-all shadow" title="แก้ไขชื่อ">
-                        <i class="fa-solid fa-pen"></i>
+                    <button data-action="edit" data-id="${safeId}" data-name="${safeName.replace(/"/g, '&quot;')}" class="px-2.5 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-xs font-bold transition-all shadow cursor-pointer" title="แก้ไขชื่อ">
+                        <i class="fa-solid fa-pen pointer-events-none"></i>
                     </button>
-                    <button onclick="resetStudentScore('${safeId}')" class="px-2.5 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs font-bold transition-all shadow" title="รีเซ็ตคะแนน">
-                        <i class="fa-solid fa-rotate-left"></i>
+                    <button data-action="reset" data-id="${safeId}" class="px-2.5 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs font-bold transition-all shadow cursor-pointer" title="รีเซ็ตคะแนน">
+                        <i class="fa-solid fa-rotate-left pointer-events-none"></i>
                     </button>
-                    <button onclick="deleteStudentEntry('${safeId}')" class="px-2.5 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs font-bold transition-all shadow" title="ลบ">
-                        <i class="fa-solid fa-trash"></i>
+                    <button data-action="delete" data-id="${safeId}" class="px-2.5 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs font-bold transition-all shadow cursor-pointer" title="ลบ">
+                        <i class="fa-solid fa-trash pointer-events-none"></i>
                     </button>
                 </td>
             </tr>
@@ -2313,9 +2313,9 @@
     let editingStudentId = null;
 
     function openEditStudentModal(id, currentName) {
-        editingStudentId = id;
-        document.getElementById('edit-student-id-display').value = id;
-        document.getElementById('edit-student-name-input').value = currentName;
+        editingStudentId = String(id).trim();
+        document.getElementById('edit-student-id-display').value = editingStudentId;
+        document.getElementById('edit-student-name-input').value = currentName || '';
         document.getElementById('edit-student-modal').classList.remove('hidden');
     }
 
@@ -2331,16 +2331,16 @@
             return;
         }
         if (editingStudentId) {
-            const student = await window.dbService.loadStudentProgress(editingStudentId);
-            if (student) {
-                student.name = newName;
-                await window.dbService.saveStudentProgress(student, false);
-                showToast("แก้ไขชื่อนักเรียนสำเร็จ!", "success");
-                closeEditStudentModal();
-                await loadAndRenderTeacherTable();
-            } else {
-                showToast("ไม่พบข้อมูลนักเรียนรายนี้", "error");
+            let student = await window.dbService.loadStudentProgress(editingStudentId);
+            if (!student) {
+                let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
+                student = localDb[editingStudentId] || { id: editingStudentId, name: newName };
             }
+            student.name = newName;
+            await window.dbService.saveStudentProgress(student, false);
+            showToast("แก้ไขชื่อนักเรียนสำเร็จ!", "success");
+            closeEditStudentModal();
+            await loadAndRenderTeacherTable();
         }
     });
 
@@ -2350,7 +2350,12 @@
 
     async function resetStudentScore(id) {
         showConfirmDialog("รีเซ็ตคะแนน", "คุณต้องการรีเซ็ตคะแนนและความคืบหน้าของนักเรียนรายนี้หรือไม่?", async () => {
-            const student = await window.dbService.loadStudentProgress(id);
+            const sid = String(id).trim();
+            let student = await window.dbService.loadStudentProgress(sid);
+            if (!student) {
+                let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
+                student = localDb[sid];
+            }
             if (student) {
                 student.score = 0;
                 student.coins = 0;
@@ -2367,11 +2372,36 @@
 
     async function deleteStudentEntry(id) {
         showConfirmDialog("ลบข้อมูลนักเรียน", "คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนักเรียนรายนี้ออกจากระบบ?", async () => {
-            await window.dbService.deleteStudent(id);
+            const sid = String(id).trim();
+            await window.dbService.deleteStudent(sid);
             showToast("ลบข้อมูลนักเรียนสำเร็จ", "success");
             await loadAndRenderTeacherTable();
         });
     }
+
+    // Delegate table actions reliably on click
+    document.getElementById('teacher-table-body').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        const name = btn.dataset.name;
+
+        if (action === 'edit') {
+            openEditStudentModal(id, name);
+        } else if (action === 'reset') {
+            resetStudentScore(id);
+        } else if (action === 'delete') {
+            deleteStudentEntry(id);
+        }
+    });
+
+    // Expose methods to global window
+    window.editStudentName = openEditStudentModal;
+    window.resetStudentScore = resetStudentScore;
+    window.deleteStudentEntry = deleteStudentEntry;
+    window.closeEditStudentModal = closeEditStudentModal;
+    window.loadAndRenderTeacherTable = loadAndRenderTeacherTable;
 
     async function cleanDuplicateStudents() {
         showConfirmDialog("ลบข้อมูลซ้ำ", "ต้องการทำความสะอาดและรวมข้อมูลนักเรียนซ้ำในระบบหรือไม่?", async () => {
