@@ -516,7 +516,7 @@
                             <th class="p-3 text-center">คะแนนรวม</th>
                             <th class="p-3 text-center">เหรียญ</th>
                             <th class="p-3 text-center">ตอบถูก/ทั้งหมด</th>
-                            <th class="p-3 text-center">สถานะ Checkpoint</th>
+                            <th class="p-3 text-center">ระดับด่าน / Checkpoint</th>
                             <th class="p-3 text-center">เวลาเล่น</th>
                             <th class="p-3 text-center">จัดการ</th>
                         </tr>
@@ -950,16 +950,27 @@
                     }
                 }
 
-                studentData.lastUpdated = new Date().toISOString();
-
+                // Merge with existing profile data so ID, Name, Grade, and Room are permanently preserved in the Dashboard
                 let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
-                localDb[sid] = studentData;
+                let existingData = localDb[sid] || {};
+                
+                const mergedData = {
+                    ...existingData,
+                    ...studentData,
+                    id: sid,
+                    name: studentData.name || existingData.name || 'นักเรียน',
+                    grade: studentData.grade || existingData.grade || '2',
+                    room: studentData.room || existingData.room || '1',
+                    lastUpdated: new Date().toISOString()
+                };
+
+                localDb[sid] = mergedData;
                 localStorage.setItem('scw_students_db', JSON.stringify(localDb));
 
                 if (db) {
                     try {
                         const docRef = doc(db, 'students', sid);
-                        await setDoc(docRef, studentData, { merge: true });
+                        await setDoc(docRef, mergedData, { merge: true });
                         this.isFirebaseReady = true;
                         this.lastError = null;
                     } catch (e) {
@@ -968,7 +979,7 @@
                         try {
                             if (auth) await signInAnonymously(auth);
                             const docRef = doc(db, 'students', sid);
-                            await setDoc(docRef, studentData, { merge: true });
+                            await setDoc(docRef, mergedData, { merge: true });
                             this.isFirebaseReady = true;
                             this.lastError = null;
                         } catch (retryErr) {
@@ -2228,7 +2239,7 @@
                 <td class="p-3 text-center">${s.correctAnswers || 0}/${s.questionsAnswered || 0}</td>
                 <td class="p-3 text-center">
                     <span class="px-2 py-1 rounded-full text-xs font-bold ${s.checkpointPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                        ${s.checkpointPassed ? 'ผ่านแล้ว' : 'กำลังดำเนินการ'}
+                        ด่าน ${s.currentLevel || 1}/5 ${s.checkpointPassed ? '(ผ่าน CP)' : ''}
                     </span>
                 </td>
                 <td class="p-3 text-center text-sm text-slate-500">${Math.floor((s.playTimeSeconds || 0)/60)} นาที</td>
@@ -2400,6 +2411,8 @@
 
         const savedData = await window.dbService.loadStudentProgress(gameState.student.id);
         if (savedData) {
+            gameState.currentLevel = savedData.currentLevel || gameState.currentLevel || 1;
+            gameState.student.character = savedData.character || gameState.student.character || 'boy';
             gameState.score = savedData.score || 0;
             gameState.coins = savedData.coins || 0;
             gameState.checkpointX = savedData.checkpointX || 100;
@@ -2447,6 +2460,8 @@
             name: gameState.student.name,
             grade: gameState.student.grade,
             room: gameState.student.room,
+            character: gameState.student.character || 'boy',
+            currentLevel: gameState.currentLevel || 1,
             score: gameState.score,
             coins: gameState.coins,
             checkpointX: gameState.checkpointX,
@@ -2476,9 +2491,17 @@
         gameState.student.grade = sgrade;
         gameState.student.room = sroom;
 
+        // บันทึกข้อมูลประจำตัวนักเรียนไว้ในเครื่องเพื่อช่วยออโต้ฟิลล์อัตโนมัติในครั้งถัดไป
+        localStorage.setItem('scw_last_student_id', sid);
+        localStorage.setItem('scw_last_student_name', sname);
+        localStorage.setItem('scw_last_student_grade', sgrade);
+        localStorage.setItem('scw_last_student_room', sroom);
+
         // ดึงข้อมูลเดิมของนักเรียนที่มีอยู่แล้วในระบบ (ถ้ามี) ก่อนเริ่มบันทึก
         const savedData = await window.dbService.loadStudentProgress(sid);
         if (savedData) {
+            gameState.currentLevel = savedData.currentLevel || 1;
+            gameState.student.character = savedData.character || 'boy';
             gameState.score = savedData.score || 0;
             gameState.coins = savedData.coins || 0;
             gameState.checkpointX = savedData.checkpointX || 100;
@@ -2486,8 +2509,11 @@
             gameState.questionsAnswered = savedData.questionsAnswered || 0;
             gameState.correctAnswers = savedData.correctAnswers || 0;
             gameState.playTimeSeconds = savedData.playTimeSeconds || 0;
-            showToast(`🎉 ยินดีต้อนรับกลับ! โหลดข้อมูลเดิมสำเร็จ (${gameState.score} คะแนน)`, "success");
+
+            selectCharacter(gameState.student.character);
+            showToast(`🎉 ยินดีต้อนรับกลับคุณ ${sname}! โหลดข้อมูลเดิมสำเร็จ (เล่นถึงด่าน ${gameState.currentLevel} | ${gameState.score} คะแนน)`, "success");
         } else {
+            gameState.currentLevel = 1;
             gameState.score = 0;
             gameState.coins = 0;
             gameState.checkpointX = 100;
@@ -2497,9 +2523,6 @@
             gameState.playTimeSeconds = 0;
             showToast("✅ บันทึกข้อมูลเข้าสู่ระบบคลาวด์เรียบร้อยแล้ว!", "success");
         }
-
-        // บันทึก ID ล่าสุดไว้ในเครื่องเพื่อช่วยออโต้ฟิลล์ในครั้งถัดไป
-        localStorage.setItem('scw_last_student_id', sid);
 
         await saveCurrentGameSession(true);
 
@@ -2521,8 +2544,9 @@
             if (existing.name) document.getElementById('input-student-name').value = existing.name;
             if (existing.grade) document.getElementById('input-student-grade').value = existing.grade;
             if (existing.room) document.getElementById('input-student-room').value = existing.room;
+            if (existing.character) selectCharacter(existing.character);
             if (hintEl) {
-                hintEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> พบข้อมูลเดิม: คะแนนสะสม ${existing.score || 0} | ${existing.coins || 0} เหรียญ`;
+                hintEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> พบข้อมูลบันทึกเดิม: เล่นถึงด่าน ${existing.currentLevel || 1} | คะแนน ${existing.score || 0} | ${existing.coins || 0} เหรียญ`;
                 hintEl.classList.remove('hidden');
             }
         } else {
@@ -2530,13 +2554,20 @@
         }
     });
 
-    // เติมรหัสนักเรียนล่าสุดให้อัตโนมัติเมื่อเข้าเว็บในเครื่องเดิม
+    // เติมข้อมูลนักเรียนล่าสุดให้อัตโนมัติเมื่อเข้าเว็บในเครื่องเดิม
     window.addEventListener('DOMContentLoaded', () => {
         const lastId = localStorage.getItem('scw_last_student_id');
+        const lastName = localStorage.getItem('scw_last_student_name');
+        const lastGrade = localStorage.getItem('scw_last_student_grade');
+        const lastRoom = localStorage.getItem('scw_last_student_room');
+
         if (lastId) {
             const idInput = document.getElementById('input-student-id');
             if (idInput) {
                 idInput.value = lastId;
+                if (lastName) document.getElementById('input-student-name').value = lastName;
+                if (lastGrade) document.getElementById('input-student-grade').value = lastGrade;
+                if (lastRoom) document.getElementById('input-student-room').value = lastRoom;
                 idInput.dispatchEvent(new Event('input'));
             }
         }
