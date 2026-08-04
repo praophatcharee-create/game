@@ -169,6 +169,7 @@
                         <input type="text" id="input-student-id" required placeholder="เช่น 6601" 
                             class="w-full pl-10 pr-4 py-2 bg-white/80 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all">
                     </div>
+                    <div id="student-id-hint" class="hidden text-xs text-amber-600 font-bold mt-1 sarabun"></div>
                 </div>
 
                 <div>
@@ -250,7 +251,7 @@
         </div>
     </div>
 
-    <!-- UI OVERLAY: How to Play Screen (วิธีการเล่น) -->
+    <!-- UI OVERLAY: How to Play Screen -->
     <div id="how-to-play-overlay" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 p-4 overflow-y-auto">
         <div class="glass-panel max-w-2xl w-full rounded-3xl shadow-2xl p-6 md:p-8 text-slate-800 relative border-2 border-amber-400 max-h-[90vh] flex flex-col">
             <div class="text-center mb-4 border-b pb-3 border-slate-200">
@@ -903,7 +904,6 @@
                             } catch (authErr) {
                                 console.warn("Firebase Auth Warning:", authErr);
                                 this.lastError = authErr.message || authErr.code;
-                                // Allow direct Firestore fallback if rules permit public access
                                 this.isFirebaseReady = true;
                             }
                         } catch (err) {
@@ -932,17 +932,25 @@
                 } catch (e) {}
             },
 
-            async saveStudentProgress(studentData) {
+            async saveStudentProgress(studentData, isExplicitLogin = false) {
                 await this.init();
-                studentData.lastUpdated = new Date().toISOString();
-                const sid = String(studentData.id);
-                
-                // หากรหัสนี้นำกลับมารีจิสเตอร์ใหม่ ให้เอาออกจาก Tombstone
+                const sid = String(studentData.id).trim();
+                if (!sid) return;
+
                 const deletedSet = this.getDeletedIds();
+                
+                // If this student was deleted, only re-create if it's an explicit login submission
                 if (deletedSet.has(sid)) {
-                    deletedSet.delete(sid);
-                    this.saveDeletedIds(deletedSet);
+                    if (isExplicitLogin) {
+                        deletedSet.delete(sid);
+                        this.saveDeletedIds(deletedSet);
+                    } else {
+                        // Skip auto-saving progress for deleted students
+                        return;
+                    }
                 }
+
+                studentData.lastUpdated = new Date().toISOString();
 
                 let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
                 localDb[sid] = studentData;
@@ -973,7 +981,7 @@
 
             async loadStudentProgress(studentId) {
                 await this.init();
-                const sid = String(studentId);
+                const sid = String(studentId).trim();
                 const deletedSet = this.getDeletedIds();
                 if (deletedSet.has(sid)) return null;
 
@@ -1008,8 +1016,11 @@
                 try {
                     let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
                     Object.values(localDb).forEach(student => {
-                        if (student && student.id && !deletedSet.has(String(student.id))) {
-                            studentMap.set(String(student.id), student);
+                        if (student && student.id != null) {
+                            const sid = String(student.id).trim();
+                            if (!deletedSet.has(sid)) {
+                                studentMap.set(sid, student);
+                            }
                         }
                     });
                 } catch (e) {}
@@ -1021,10 +1032,11 @@
                         const querySnap = await getDocs(colRef);
                         querySnap.forEach(docSnap => {
                             const data = docSnap.data();
-                            if (data && data.id && !deletedSet.has(String(data.id))) {
-                                const localVal = studentMap.get(String(data.id));
+                            const docId = String(data.id || docSnap.id).trim();
+                            if (data && docId && !deletedSet.has(docId)) {
+                                const localVal = studentMap.get(docId);
                                 if (!localVal || !localVal.lastUpdated || (data.lastUpdated && data.lastUpdated >= localVal.lastUpdated)) {
-                                    studentMap.set(String(data.id), data);
+                                    studentMap.set(docId, data);
                                 }
                             }
                         });
@@ -1053,16 +1065,20 @@
                             try {
                                 let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
                                 Object.values(localDb).forEach(student => {
-                                    if (student && student.id && !deletedSet.has(String(student.id))) {
-                                        studentMap.set(String(student.id), student);
+                                    if (student && student.id != null) {
+                                        const sid = String(student.id).trim();
+                                        if (!deletedSet.has(sid)) {
+                                            studentMap.set(sid, student);
+                                        }
                                     }
                                 });
                             } catch (e) {}
 
                             snapshot.forEach(docSnap => {
                                 const data = docSnap.data();
-                                if (data && data.id && !deletedSet.has(String(data.id))) {
-                                    studentMap.set(String(data.id), data);
+                                const sid = String(data.id || docSnap.id).trim();
+                                if (data && !deletedSet.has(sid)) {
+                                    studentMap.set(sid, data);
                                 }
                             });
 
@@ -1081,22 +1097,36 @@
 
             async deleteStudent(studentId) {
                 await this.init();
-                const sid = String(studentId);
+                const sid = String(studentId).trim();
+                if (!sid) return;
 
+                // 1. Log into Tombstone Set
                 const deletedSet = this.getDeletedIds();
                 deletedSet.add(sid);
                 this.saveDeletedIds(deletedSet);
                 
+                // 2. Clear from current session if matches active player
+                if (String(gameState.student.id).trim() === sid) {
+                    gameState.student.id = '';
+                }
+
+                // 3. Remove from Local Storage
                 try {
                     let localDb = JSON.parse(localStorage.getItem('scw_students_db') || '{}');
                     delete localDb[sid];
+                    Object.keys(localDb).forEach(k => {
+                        if (String(k).trim() === sid) delete localDb[k];
+                    });
                     localStorage.setItem('scw_students_db', JSON.stringify(localDb));
                 } catch (e) {}
 
+                // 4. Remove from Firestore
                 if (db) {
                     try {
                         const docRef = doc(db, 'students', sid);
                         await deleteDoc(docRef);
+                        this.isFirebaseReady = true;
+                        this.lastError = null;
                     } catch (e) {
                         console.error("Firestore Delete Error:", e);
                     }
@@ -2169,7 +2199,7 @@
 
     function renderFilteredTeacherTable(students) {
         const tbody = document.getElementById('teacher-table-body');
-        const searchQuery = document.getElementById('teacher-search').value.toLowerCase();
+        const searchQuery = document.getElementById('teacher-search').value.toLowerCase().trim();
         const gradeFilter = document.getElementById('teacher-filter-grade').value;
         const roomFilter = document.getElementById('teacher-filter-room').value;
 
@@ -2246,7 +2276,7 @@
             const student = await window.dbService.loadStudentProgress(editingStudentId);
             if (student) {
                 student.name = newName;
-                await window.dbService.saveStudentProgress(student);
+                await window.dbService.saveStudentProgress(student, false);
                 showToast("แก้ไขชื่อนักเรียนสำเร็จ!", "success");
                 closeEditStudentModal();
                 await loadAndRenderTeacherTable();
@@ -2270,7 +2300,7 @@
                 student.questionsAnswered = 0;
                 student.correctAnswers = 0;
                 student.playTimeSeconds = 0;
-                await window.dbService.saveStudentProgress(student);
+                await window.dbService.saveStudentProgress(student, false);
                 showToast("รีเซ็ตคะแนนเรียบร้อยแล้ว", "success");
                 await loadAndRenderTeacherTable();
             }
@@ -2297,7 +2327,7 @@
             localStorage.setItem('scw_students_db', JSON.stringify(uniqueMap));
             
             for (const student of Object.values(uniqueMap)) {
-                await window.dbService.saveStudentProgress(student);
+                await window.dbService.saveStudentProgress(student, false);
             }
 
             showToast("ลบข้อมูลนักเรียนซ้ำเรียบร้อยแล้ว!", "success");
@@ -2381,7 +2411,7 @@
 
         clearInterval(gameState.timerInterval);
         gameState.timerInterval = setInterval(() => {
-            if (!gameState.isPaused) gameState.playTimeSeconds++;
+            if (!gameState.isPaused && gameState.student.id) gameState.playTimeSeconds++;
         }, 1000);
 
         const config = {
@@ -2409,7 +2439,9 @@
         updateHUD();
     }
 
-    async function saveCurrentGameSession() {
+    async function saveCurrentGameSession(isExplicitLogin = false) {
+        if (!gameState.student.id) return;
+
         const studentData = {
             id: gameState.student.id,
             name: gameState.student.name,
@@ -2424,31 +2456,90 @@
             correctAnswers: gameState.correctAnswers,
             playTimeSeconds: gameState.playTimeSeconds
         };
-        await window.dbService.saveStudentProgress(studentData);
+        await window.dbService.saveStudentProgress(studentData, isExplicitLogin);
     }
 
     function exitToMainMenu() {
-        saveCurrentGameSession();
+        saveCurrentGameSession(false);
         location.reload();
     }
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        gameState.student.id = document.getElementById('input-student-id').value.trim();
-        gameState.student.name = document.getElementById('input-student-name').value.trim();
-        gameState.student.grade = document.getElementById('input-student-grade').value;
-        gameState.student.room = document.getElementById('input-student-room').value;
+        const sid = document.getElementById('input-student-id').value.trim();
+        const sname = document.getElementById('input-student-name').value.trim();
+        const sgrade = document.getElementById('input-student-grade').value;
+        const sroom = document.getElementById('input-student-room').value;
 
-        await saveCurrentGameSession();
+        gameState.student.id = sid;
+        gameState.student.name = sname;
+        gameState.student.grade = sgrade;
+        gameState.student.room = sroom;
 
-        if (window.dbService && window.dbService.lastError) {
-            showToast(`⚠️ บันทึกในเครื่อง (ยังไม่ขึ้น Cloud: ${window.dbService.lastError})`, "warning");
+        // ดึงข้อมูลเดิมของนักเรียนที่มีอยู่แล้วในระบบ (ถ้ามี) ก่อนเริ่มบันทึก
+        const savedData = await window.dbService.loadStudentProgress(sid);
+        if (savedData) {
+            gameState.score = savedData.score || 0;
+            gameState.coins = savedData.coins || 0;
+            gameState.checkpointX = savedData.checkpointX || 100;
+            gameState.checkpointY = savedData.checkpointY || 300;
+            gameState.questionsAnswered = savedData.questionsAnswered || 0;
+            gameState.correctAnswers = savedData.correctAnswers || 0;
+            gameState.playTimeSeconds = savedData.playTimeSeconds || 0;
+            showToast(`🎉 ยินดีต้อนรับกลับ! โหลดข้อมูลเดิมสำเร็จ (${gameState.score} คะแนน)`, "success");
         } else {
+            gameState.score = 0;
+            gameState.coins = 0;
+            gameState.checkpointX = 100;
+            gameState.checkpointY = 300;
+            gameState.questionsAnswered = 0;
+            gameState.correctAnswers = 0;
+            gameState.playTimeSeconds = 0;
             showToast("✅ บันทึกข้อมูลเข้าสู่ระบบคลาวด์เรียบร้อยแล้ว!", "success");
         }
 
+        // บันทึก ID ล่าสุดไว้ในเครื่องเพื่อช่วยออโต้ฟิลล์ในครั้งถัดไป
+        localStorage.setItem('scw_last_student_id', sid);
+
+        await saveCurrentGameSession(true);
+
         document.getElementById('login-overlay').classList.add('hidden');
         document.getElementById('char-select-overlay').classList.remove('hidden');
+    });
+
+    // ระบบค้นหาและเติมข้อมูลเดิมให้อัตโนมัติทันทีที่พิมพ์รหัสนักเรียน
+    document.getElementById('input-student-id').addEventListener('input', async (e) => {
+        const sid = e.target.value.trim();
+        const hintEl = document.getElementById('student-id-hint');
+        if (!sid) {
+            if (hintEl) hintEl.classList.add('hidden');
+            return;
+        }
+
+        const existing = await window.dbService.loadStudentProgress(sid);
+        if (existing) {
+            if (existing.name) document.getElementById('input-student-name').value = existing.name;
+            if (existing.grade) document.getElementById('input-student-grade').value = existing.grade;
+            if (existing.room) document.getElementById('input-student-room').value = existing.room;
+            if (hintEl) {
+                hintEl.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> พบข้อมูลเดิม: คะแนนสะสม ${existing.score || 0} | ${existing.coins || 0} เหรียญ`;
+                hintEl.classList.remove('hidden');
+            }
+        } else {
+            if (hintEl) hintEl.classList.add('hidden');
+        }
+    });
+
+    // เติมรหัสนักเรียนล่าสุดให้อัตโนมัติเมื่อเข้าเว็บในเครื่องเดิม
+    window.addEventListener('DOMContentLoaded', () => {
+        const lastId = localStorage.getItem('scw_last_student_id');
+        if (lastId) {
+            const idInput = document.getElementById('input-student-id');
+            if (idInput) {
+                idInput.value = lastId;
+                idInput.dispatchEvent(new Event('input'));
+            }
+        }
     });
 
     document.getElementById('teacher-login-form').addEventListener('submit', (e) => {
