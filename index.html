@@ -863,7 +863,6 @@
             appId: "1:866766129823:web:859f45500ed07a91f6b0aa"
         };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'super-computing-world-v1';
         let firebaseConfig = MY_CUSTOM_FIREBASE_CONFIG;
         
         if (typeof __firebase_config !== 'undefined' && __firebase_config) {
@@ -881,6 +880,7 @@
         window.dbService = {
             isFirebaseReady: false,
             initPromise: null,
+            lastError: null,
             
             async init() {
                 if (this.initPromise) return this.initPromise;
@@ -899,17 +899,16 @@
                                     await signInAnonymously(auth);
                                 }
                                 this.isFirebaseReady = true;
-                            } catch (tokenErr) {
-                                try {
-                                    await signInAnonymously(auth);
-                                    this.isFirebaseReady = true;
-                                } catch (anonErr) {
-                                    console.warn("Anonymous Auth not enabled in Firebase Console, using local storage mode:", anonErr);
-                                    this.isFirebaseReady = false;
-                                }
+                                this.lastError = null;
+                            } catch (authErr) {
+                                console.warn("Firebase Auth Warning:", authErr);
+                                this.lastError = authErr.message || authErr.code;
+                                // Allow direct Firestore fallback if rules permit public access
+                                this.isFirebaseReady = true;
                             }
                         } catch (err) {
-                            console.error("Firebase init error:", err);
+                            console.error("Firebase Init Error:", err);
+                            this.lastError = err.message || err.code;
                             this.isFirebaseReady = false;
                         }
                     }
@@ -951,19 +950,23 @@
 
                 if (db) {
                     try {
-                        if (!auth?.currentUser) {
-                            await signInAnonymously(auth);
-                        }
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', sid);
+                        const docRef = doc(db, 'students', sid);
                         await setDoc(docRef, studentData, { merge: true });
                         this.isFirebaseReady = true;
+                        this.lastError = null;
                     } catch (e) {
+                        console.error("Firestore Save Error:", e);
+                        this.lastError = e.message || e.code;
                         try {
-                            await signInAnonymously(auth);
-                            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', sid);
+                            if (auth) await signInAnonymously(auth);
+                            const docRef = doc(db, 'students', sid);
                             await setDoc(docRef, studentData, { merge: true });
                             this.isFirebaseReady = true;
-                        } catch (retryErr) {}
+                            this.lastError = null;
+                        } catch (retryErr) {
+                            console.error("Firestore Retry Save Error:", retryErr);
+                            this.lastError = retryErr.message || retryErr.code;
+                        }
                     }
                 }
             },
@@ -978,15 +981,14 @@
                 
                 if (db) {
                     try {
-                        if (!auth?.currentUser) {
-                            await signInAnonymously(auth);
-                        }
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', sid);
+                        const docRef = doc(db, 'students', sid);
                         const snap = await getDoc(docRef);
                         if (snap.exists()) {
                             studentData = snap.data();
                         }
-                    } catch (e) {}
+                    } catch (e) {
+                        console.error("Firestore Load Error:", e);
+                    }
                 }
 
                 if (!studentData) {
@@ -1015,10 +1017,7 @@
                 // 2. ดึงข้อมูลจาก Firestore Cloud Database
                 if (db) {
                     try {
-                        if (!auth?.currentUser) {
-                            await signInAnonymously(auth);
-                        }
-                        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+                        const colRef = collection(db, 'students');
                         const querySnap = await getDocs(colRef);
                         querySnap.forEach(docSnap => {
                             const data = docSnap.data();
@@ -1030,19 +1029,10 @@
                             }
                         });
                         this.isFirebaseReady = true;
+                        this.lastError = null;
                     } catch (e) {
-                        try {
-                            await signInAnonymously(auth);
-                            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
-                            const querySnap = await getDocs(colRef);
-                            querySnap.forEach(docSnap => {
-                                const data = docSnap.data();
-                                if (data && data.id && !deletedSet.has(String(data.id))) {
-                                    studentMap.set(String(data.id), data);
-                                }
-                            });
-                            this.isFirebaseReady = true;
-                        } catch (err2) {}
+                        console.error("Firestore Fetch All Error:", e);
+                        this.lastError = e.message || e.code;
                     }
                 }
 
@@ -1054,7 +1044,7 @@
                     if (!db) return;
                     try {
                         if (snapshotUnsubscribe) snapshotUnsubscribe();
-                        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+                        const colRef = collection(db, 'students');
                         snapshotUnsubscribe = onSnapshot(colRef, (snapshot) => {
                             const deletedSet = this.getDeletedIds();
                             let studentMap = new Map();
@@ -1076,11 +1066,16 @@
                                 }
                             });
 
+                            this.isFirebaseReady = true;
+                            this.lastError = null;
                             onDataChange(Array.from(studentMap.values()));
                         }, (error) => {
                             console.error("Snapshot error:", error);
+                            this.lastError = error.message || error.code;
                         });
-                    } catch (e) {}
+                    } catch (e) {
+                        console.error("Subscribe error:", e);
+                    }
                 });
             },
 
@@ -1100,17 +1095,10 @@
 
                 if (db) {
                     try {
-                        if (!auth?.currentUser) {
-                            await signInAnonymously(auth);
-                        }
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', sid);
+                        const docRef = doc(db, 'students', sid);
                         await deleteDoc(docRef);
                     } catch (e) {
-                        try {
-                            await signInAnonymously(auth);
-                            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', sid);
-                            await deleteDoc(docRef);
-                        } catch (retryErr) {}
+                        console.error("Firestore Delete Error:", e);
                     }
                 }
             }
@@ -2164,9 +2152,12 @@
         tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500"><i class="fa-solid fa-spinner animate-spin"></i> กำลังโหลดและเชื่อมต่อข้อมูล...</td></tr>';
 
         const badgeEl = document.getElementById('db-status-badge');
-        if (window.dbService && window.dbService.isFirebaseReady) {
+        if (window.dbService && window.dbService.isFirebaseReady && !window.dbService.lastError) {
             badgeEl.className = "px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 bg-emerald-100 text-emerald-800 border border-emerald-300";
             badgeEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-emerald-600"></i> ออนไลน์ (Cloud Sync Real-time)`;
+        } else if (window.dbService && window.dbService.lastError) {
+            badgeEl.className = "px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 bg-red-100 text-red-800 border border-red-300";
+            badgeEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-600"></i> Firebase Error (${window.dbService.lastError})`;
         } else {
             badgeEl.className = "px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 bg-amber-100 text-amber-800 border border-amber-300";
             badgeEl.innerHTML = `<i class="fa-solid fa-hard-drive text-amber-600"></i> ออฟไลน์ (Local Cache)`;
@@ -2449,6 +2440,12 @@
         gameState.student.room = document.getElementById('input-student-room').value;
 
         await saveCurrentGameSession();
+
+        if (window.dbService && window.dbService.lastError) {
+            showToast(`⚠️ บันทึกในเครื่อง (ยังไม่ขึ้น Cloud: ${window.dbService.lastError})`, "warning");
+        } else {
+            showToast("✅ บันทึกข้อมูลเข้าสู่ระบบคลาวด์เรียบร้อยแล้ว!", "success");
+        }
 
         document.getElementById('login-overlay').classList.add('hidden');
         document.getElementById('char-select-overlay').classList.remove('hidden');
